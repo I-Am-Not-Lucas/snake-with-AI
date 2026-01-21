@@ -8,8 +8,8 @@ from helper import plot
 
 # Parâmetros do Algoritmo Genético
 POPULATION_SIZE = 100
-TOP_K = 20 # Melhores para reprodução
-SURVIVORS = 20 # Quantos sobrevivem (Elimina os 80 piores: 100 - 80 = 20)
+TOP_K = 20 
+SURVIVORS = 20
 MUTATION_RATE = 0.05
 MUTATION_POWER = 0.2
 
@@ -93,9 +93,28 @@ def train_genetic():
     # 1. População Inicial
     population = []
     
-    # Tenta carregar modelo existente para iniciar a população
     base_model = LinearQNet(12, 512, 3)
-    loaded = base_model.load('best_model.pth')
+    
+    # Tenta carregar checkpoint completo
+    import os
+    if os.path.exists('checkpoint.pth'):
+        print("Carregando checkpoint...")
+        checkpoint = torch.load('checkpoint.pth')
+        generation = checkpoint['generation']
+        record = checkpoint['record']
+        total_score = checkpoint['total_score']
+        plot_scores = checkpoint['plot_scores']
+        plot_mean_scores = checkpoint['plot_mean_scores']
+        base_model.load_state_dict(checkpoint['model_state'])
+        loaded = True
+        print(f"Retomando da Geração {generation} | Recorde: {record}")
+    else:
+        # Fallback para modelo antigo se não houver checkpoint
+        if os.path.exists('best_model.pth'):
+             base_model.load_state_dict(torch.load('best_model.pth'))
+             loaded = True
+        else:
+             loaded = False
     
     print("Inicializando população...")
     for i in range(POPULATION_SIZE):
@@ -117,6 +136,8 @@ def train_genetic():
         # 2. Avaliação (Todos jogam)
         for i, agent in enumerate(population):
             # Só mostra a tela para a 1ª cobra da população (para ser rápido)
+            # Como a população é ordenada com os sobreviventes (melhores) primeiro,
+            # i=0 sempre será o MELHOR agente da geração anterior.
             show_ui = (i == 0)
             fitness, game_score = run_game(agent, ui_active=show_ui)
             # Armazena ((Fitness, ScoreReal), Agente)
@@ -144,7 +165,8 @@ def train_genetic():
             # Salva o melhor modelo (Agente com maior fitness costuma ter bom score, mas garantimos recorde real)
             # Idealmente salvaríamos o agente que fez o recorde. 
             # Mas aqui salvamos o Top Fitness. (Geralmente correlacionado)
-            scores[0][1].model.save('best_model.pth')
+            # scores[0][1].model.save('best_model.pth') # Substituído pelo checkpoint
+            pass
             
         print(f"Geração {generation} | Fit: {best_fitness:.2f} | Score: {best_score_real} | Média Fit: {avg_fitness:.2f} | Recorde: {record}")
         
@@ -152,6 +174,17 @@ def train_genetic():
         total_score += best_score_real
         plot_mean_scores.append(total_score / generation)
         plot(plot_scores, plot_mean_scores)
+
+        # SALVA CHECKPOINT
+        checkpoint = {
+            'generation': generation,
+            'record': record,
+            'total_score': total_score,
+            'plot_scores': plot_scores,
+            'plot_mean_scores': plot_mean_scores,
+            'model_state': scores[0][1].model.state_dict() # Salva estado do melhor agente desta geração
+        }
+        torch.save(checkpoint, 'checkpoint.pth')
         
         # 4. Reprodução
         new_population = []

@@ -14,7 +14,7 @@ def plot(scores, mean_scores):
     
     # Se a figura ainda não existe (primeira vez), cria
     if _fig is None or not plt.fignum_exists(_fig.number):
-        _fig, _ax = plt.subplots()
+        _fig, _ax = plt.subplots(figsize=(5, 4))
         _line1, = _ax.plot([], [], label='Score')
         _line2, = _ax.plot([], [], label='Média')
         _ax.set_xlabel('Gereção')

@@ -30,7 +30,7 @@ YELLOW = (255, 255, 0)
 
 # Constantes do jogo
 BLOCK_SIZE = 20
-SPEED = 20
+SPEED = 100
 MAX_ENERGY = 200
 ENERGY_STEP_COST = 1
 ENERGY_FOOD_REWARD = 40
@@ -139,7 +139,7 @@ class SnakeGameAI:
             reward = FOOD_REWARD # Recompensa por comer
             
             # Recupera energia ao comer, limitado ao máximo permitido
-            self.energy = min(MAX_ENERGY, self.energy + ENERGY_FOOD_REWARD)
+            self.energy = MAX_ENERGY
             
             self._place_food()
         else:
